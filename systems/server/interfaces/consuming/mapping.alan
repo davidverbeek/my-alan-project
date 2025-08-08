@@ -1,4 +1,1 @@
 imported-interfaces
-'Supplier' = 'Supplier'( ) (
-	'Delivery Time': text = 'Delivery Time'
-)

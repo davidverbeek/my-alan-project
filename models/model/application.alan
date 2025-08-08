@@ -14,13 +14,6 @@ users
 			)
 
 interfaces
-	'Supplier' ( ) = .'Supplier Data' // one supplier
-		connection-status: .'Status' (
-			| connected    => 'Connected' ( )
-			| connecting   => 'Connecting' ( )
-			| disconnected => 'Disconnected' ( )
-			| unavailable  => 'Unavailable' ( )
-		)
 
 root {
 	/*'Application': text = "Webservices"
@@ -48,17 +41,6 @@ root {
 	can-read: user
 	can-update: user .'Type'?'Admin'
 
-	'Supplier Data': group {
-		can-update: interface 'Supplier'
-
-		'Delivery Time': text
-		'Status': stategroup (
-			'Connected' { }
-			'Connecting' { }
-			'Disconnected' { }
-			'Unavailable' { }
-		)
-	}
 	'Users': collection ['Name'] {
 		'Name': text
 		'Type': stategroup (
