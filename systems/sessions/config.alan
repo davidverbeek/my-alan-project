@@ -1,0 +1,3 @@
+password-authentication: enabled
+user-creation: enabled
+user-linking: disabled

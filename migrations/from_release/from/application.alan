@@ -1,0 +1,149 @@
+users
+	dynamic: .'Users'
+		user-initializer: (
+			'Type' = create 'Admin' ( )
+		)
+		passwords: .'Passwords'
+			password-value: .'Data'.'Password'
+			password-status: .'Data'.'Active' (
+				| active => 'Yes' ( )
+				| reset  => 'No' ( )
+			)
+			password-initializer: (
+				'Data' = ( )
+			)
+
+interfaces
+
+root {
+	'Application': text = "Webservices"
+	'Versie': text = "2025.1.0.1"
+	'UManagement': group @icon: "gear" @breakout {
+		'User management': group @icon: "organization" @breakout {
+			'Users': collection ['Name'] {
+				'Name': text
+				'Full Name': text
+				'User Roles': collection ['Role'] @small {
+					'Role': text
+				}
+				'Rollen': group {
+					'Administrator': stategroup (
+						'Yes' { }
+						'No' { }
+					)
+				}
+			}
+		}
+	}
+	'Users': collection ['Name'] {
+		'Name': text
+		'Type': stategroup (
+			'Admin' { }
+			'Unknown' { }
+		)
+	}
+	'Passwords': collection ['User'] {
+		'User': text -> ^ .'Users'[]
+		'Data': group {
+			can-update: user is ( ^ >'User' )
+
+			'Password': text
+			'Active': stategroup (
+				'No' { }
+				'Yes' { }
+			)
+		}
+	}
+	'Management': group {
+		'Discount periods': collection ['Period'] {
+			'Period': text
+			'Percentage': number 'percent'
+			'Minimal spendings': number 'eurocent'
+		}
+		'VAT percentage': number 'percent'
+	}
+	'Beverage types': collection ['Beverage type'] {
+		'Beverage type': text
+	}
+	'Menu': collection ['Item name'] {
+		'Item name': text
+		'Selling price': number 'eurocent'
+		'Item type': stategroup (
+			'Dish' {
+				'Dish type': stategroup (
+					'Appetizer' { }
+					'Main course' { }
+					'Dessert' { }
+				)
+			}
+			'Beverage' {
+				'Beverage type': text -> ^ ^ .'Beverage types'[]
+			}
+		)
+	}
+	'Tables': collection ['Table number'] {
+		'Table number': text
+		'Seatings': number 'chairs'
+		'Order lines': collection ['Order line'] {
+			'Order line': text
+			'Item': text -> ^ ^ .'Menu'[]
+			'Amount': number 'units'
+			'Selling Price': number 'eurocent' = >'Item'.'Selling price'
+			'Line total': number 'eurocent' = product ( .'Amount' as 'units', >'Item'.'Selling price' )
+		}
+		'Subtotal': number 'eurocent' = sum .'Order lines'* .'Line total'
+		'Discount applicable': stategroup (
+			'Yes' {
+				'Discount period': text -> ^ ^ .'Management'.'Discount periods'[]
+				'Discount': number 'eurocent' = switch ^ .'Subtotal' compare ( >'Discount period'.'Minimal spendings' ) (
+					| <  => 0
+					| >= => product ( from 'percent'>'Discount period'.'Percentage' as 'fraction', ^ .'Subtotal' )
+				)
+				'Total': number 'eurocent' = sum ( ^ .'Subtotal', - .'Discount' )
+			}
+			'No' { }
+		)
+	}
+	'Product List': collection ['Product Sku'] {
+		'Product Sku': text
+		'Name': text
+		//'Orders': reference-set -> downstream ^ ^ .'Orders'* .'Order type'?'In-house' = inverse >'Table'
+		'Order List': reference-set -> downstream ^ .'Order List'* .'Order lines'* = inverse >'Product'
+	}
+	'Order List': collection ['Order Number'] {
+		'Order Number': text
+		'Order lines': collection ['Order line'] {
+			'Order line': text
+			'Product': text -> ^ ^ .'Product List'[]
+		}
+	}
+	'Place new order': command {
+		'Provide an order number': text
+		'Order lines': collection ['Provide an order line number'] {
+			'Provide an order line number': text
+			'Products To Purchase': text -> ^ ^ .'Product List'[]
+		}
+	} as $'param' => update .'Order List' = create (
+		'Order Number' = $'param'.'Provide an order number'
+		'Order lines' = walk $'param'.'Order lines'* as $ (
+			create (
+				'Order line' = $ .'Provide an order line number'
+				'Product' = $ .'Products To Purchase'
+			)
+		)
+	)
+}
+
+numerical-types
+	'eurocent'
+		= 'units' * 'eurocent'
+		= 'fraction' * 'eurocent'
+		@numerical-type: (
+			label: "Euro"
+			decimals: 4
+		)
+	'chairs'
+	'units'
+	'percent'
+	'fraction'
+		= 'percent' / 1 * 10 ^ 2
