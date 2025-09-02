@@ -1,0 +1,39 @@
+interfaces
+	'platform-versions'
+
+models
+	'model'
+
+external-systems
+
+systems
+	'server': 'datastore'
+		project / (
+			'interfaces'/ (
+				'providing'/ ( )
+				'consuming'/ (
+					['platform-versions'] = consume 'connector-platform-versions'/'interface'
+				)
+			)
+			'model' = provide 'model'
+		)
+
+	'sessions': 'session-manager'
+		project / (
+			'model' = bind 'server'::'authenticate'
+		)
+
+	'client': 'auto-webclient'
+		project / (
+			'model' = consume 'server'/'model'
+		)
+
+	'connector-platform-versions': 'connector'
+		project / (
+			'interface' = provide 'platform-versions'
+		)
+
+provided-connections
+	'auth'       = 'sessions'::'http'
+	'client'     = 'client'::'http'
+	'webservice' = 'connector-platform-versions'::'http'
