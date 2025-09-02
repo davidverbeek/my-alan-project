@@ -1,0 +1,27 @@
+root {
+	'Last Synchronization': number 'date and time'
+	'Synchronize': command { }
+	'Platform Version': text
+	'System Types': collection ['System Type'] {
+		'System Type': text
+		'Version': text
+		'Send Message': command {
+			'Message': text
+		}
+		'Receive Result': event {
+			'ID': text
+			'Timestamp': number 'date and time'
+		}
+	}
+	'Webservice Callback': event {
+		'ID': text
+		'Timestamp': number 'date and time'
+		'Parameters': collection ['Parameter'] {
+			'Parameter': text
+			'Value': text
+		}
+	}
+}
+
+numerical-types
+	'date and time'

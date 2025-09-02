@@ -1,0 +1,114 @@
+provider {
+	let $'response' = true => call 'network'::'http' with (
+		$'server'         = "https://dist.alan-platform.com"
+		$'path'           = "/share/versions/2024.2/versions.json"
+		$'authentication' = unset
+		$'request'        = new (
+			'method' = option 'get'
+			'headers' = {
+				create [ "accept" ] "application/json"
+			}
+			'parameters' = {
+				create [ "t" ] now => serialize as integer
+			}
+		)
+	) || throw "unable to perform request"
+
+	switch $'response'.'status' => is ( 200 ) (
+		| true => {
+			// several operations are performed in sequence: parse binary response data as UTF-8 text, parse the text as JSON and validate the JSON against the schema:
+			let $'data' = ^ $'response'.'content' => call 'unicode'::'import' with ( $'encoding' = "UTF-8" ) => parse as JSON => decorate as {
+				'platform version': text
+				'system types': collection {
+					'version': text
+				}
+			} || throw "unable to parse JSON"
+
+			// this dataset is provided to the Alan application:
+			(
+				'Last Synchronization' = now
+				'Platform Version' = $'data'.'platform version'
+				'System Types' = walk $'data'.'system types' as $ => create (
+					'System Type' = key
+					'Version' = $ .'version'
+				)
+			)
+		}
+		| false => throw "unexepected response code"
+	)
+}
+// execute the above logic to provide a dataset directly when starting:
+init main
+
+// this forces the connector to deliver a new dataset to the Alan application:
+routine 'sync' on command 'Synchronize' schedule
+
+// this logic is executed when 'Send Message' command is executed in the Alan application:
+routine 'message' on command 'Send Message'
+	$'System Type' = .'System Types'[]
+do {
+	let $'msg' = $
+	let $'json' = true => call 'network'::'http' with (
+		$'server'         = "https://dist.alan-platform.com"
+		$'path'           = "/share/versions/test"
+		$'authentication' = unset
+		$'request'        = new (
+			'method' = option 'post'
+			'headers' = {
+				create [ "content-type" ] "text/plain"
+			}
+			'content' = $'msg' => serialize as JSON => call 'unicode'::'as binary' with ( )
+		)
+	) || throw "unable to perform request"
+
+	// send feedback to Alan application
+	execute ^ $'System Type' event 'Receive Result' with (
+		'ID' = guid
+		'Timestamp' = now
+	)
+}
+
+// this receives incoming requests
+add-hook 'network'::'webserver' "/callback"
+do {
+	let $'root' = $
+
+	try {
+		// only allow GET requests
+		switch ^ $'request'.'method' (
+			|'post' => throw "unsupported"
+			|'head' => throw "unsupported"
+			|'put' => throw "unsupported"
+			|'get' => {
+				// send callback to Alan application
+				execute $'root' event 'Webservice Callback' with (
+					'ID' = guid
+					'Timestamp' = now
+					'Parameters' = switch ^ $'request'.'parameters' get (
+						| value as $ => walk $ as $ => {
+							create (
+								'Parameter' = key
+								'Value' = $
+							)
+						}
+						| error => no-op
+					)
+				)
+				(
+					'status' = 200
+					'headers' = no-op
+					'content' = "OK" => call 'unicode'::'as binary' with ( )
+				)
+			}
+			|'delete' => throw "unsupported"
+		)
+	}
+	catch as $ => {
+		// send exception text as response body
+		(
+			'status' = 405
+			'headers' = no-op
+			'content' = $ => call 'unicode'::'as binary' with ( )
+		)
+	}
+}

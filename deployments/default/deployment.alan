@@ -14,9 +14,9 @@ systems
 			'token interval'               = 86400 // 1 day
 			'token limit'                  = 2592000 // ~1 month (30 days)
 			'domain name'                  = none
-			'base uri'                     = "https://app.alan-platform.com/GYZS/auth/"
+			'base uri'                     = "https://app.alan-platform.com/USERNAME/auth/"
 			'known uris'                   = (
-				'https://app.alan-platform.com/GYZS/client/' = "Client"
+				'https://app.alan-platform.com/USERNAME/client/' = "Client"
 			)
 			'openid authority issuer uris' = ( )
 			'openid authority client ids'  = ( )
@@ -28,3 +28,8 @@ systems
 		schedule: every day every hour
 			at 0
 			at 30
+
+	'connector-platform-versions'
+		configuration: 'default'
+		instance-data: local
+		schedule: never

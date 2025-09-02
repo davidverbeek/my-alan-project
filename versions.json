@@ -2,13 +2,16 @@
 	"platform version": "2024.2",
 	"system types": {
 		"auto-webclient": {
-			"version": "yar.11"
+			"version": "yar.13"
 		},
 		"datastore": {
 			"version": "116"
 		},
 		"session-manager": {
 			"version": "31"
+		},
+		"connector": {
+			"version": "36.7"
 		}
 	}
 }

@@ -1,1 +1,23 @@
 imported-interfaces
+	'platform-versions' = 'platform-versions' ( ) (
+		'Last Synchronization': number = 'Last Synchronization'
+		'Synchronize': command => execute 'Synchronize' ( )
+		'Platform Version': text = 'Platform Version'
+		'System Types': collection = 'System Types' (
+			'Version': text = 'Version'
+			'Send Message': command => execute 'Send Message' (
+				'Message': text = 'Message'
+			)
+			'Receive Result': command => handle 'Receive Result' (
+				'ID': text = 'ID'
+				'Timestamp': number = 'Timestamp'
+			)
+		)
+		'Webservice Callback': command => handle 'Webservice Callback' (
+			'ID': text = 'ID'
+			'Timestamp': number = 'Timestamp'
+			'Parameters': collection = 'Parameters' (
+				'Value': text = 'Value'
+			)
+		)
+	)
